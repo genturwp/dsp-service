@@ -7,4 +7,5 @@ instance/
 htmlcov/
 dist/
 build/
+upload_dsp/
 *.egg-info/
