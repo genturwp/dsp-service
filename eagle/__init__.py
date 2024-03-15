@@ -248,6 +248,9 @@ def create_app(config_class=Config):
                 exists_in_jabatan = dsp_jabatan["dsp_jabatan"] in [
                     jab[1] for jab in jab_sat if jab[1] == dsp_jabatan["dsp_jabatan"]
                 ]
+                exists_in_subsat = dsp_jabatan["dsp_jabatan"] in [
+                    jab[1] for jab in jab_subsat if jab[1] == dsp_jabatan["dsp_jabatan"]
+                ]
                 if exists_in_jabatan:
                     for jab in jab_sat:
                         dsp_jabatan["sisfopers_struktur_id"] = jab[0]
@@ -260,6 +263,21 @@ def create_app(config_class=Config):
                         dsp_jabatan["sisfopers_parent_id"] = ""
                         dsp_jabatan["sisfopers_subsatuankerja_id"] = ""
                         dsp_jabatan["compare_status"] = 1
+                elif exists_in_subsat:
+                    for jab in jab_subsat:
+                        if jab[1] == dsp_jabatan["dsp_jabatan"]:
+                            dsp_jabatan["sisfopers_struktur_id"] = jab[0]
+                            dsp_jabatan["sisfopers_jabatan_nama_panjang"] = jab[2]
+                            dsp_jabatan["sisfopers_jumlah_perwira"] = jab[3]
+                            dsp_jabatan["sisfopers_jumlah_bintara"] = jab[4]
+                            dsp_jabatan["sisfopers_jumlah_tamtama"] = jab[5]
+                            dsp_jabatan["sisfopers_jumlah_pns"] = jab[6]
+                            dsp_jabatan["sisfopers_jumlah_total"] = jab[7]
+                            dsp_jabatan["sisfopers_parent_id"] = jab[8] 
+                            dsp_jabatan["sisfopers_subsatuankerja_id"] = jab[9] 
+                            dsp_jabatan["compare_status"] = 1
+                            break
+
                 else:
                     dsp_jabatan["sisfopers_struktur_id"] = ""
                     dsp_jabatan["sisfopers_jabatan_nama_panjang"] = ""
