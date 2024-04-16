@@ -1,5 +1,5 @@
 import os
-from flask import Flask, request, Response
+from flask import Flask, request
 from sqlalchemy import select, delete, text, asc, insert
 from config import Config
 from eagle.extensions import db
@@ -138,6 +138,7 @@ def create_app(config_class=Config):
         df["dsp_satuankerja_id"] = form_data.get("satuankerja_id")
         df["dsp_satuankerja_nama"] = form_data.get("satuankerja_nama")
         df["dsp_nomor_keputusan_kasau"] = form_data.get("nomor_keputusan_kasau")
+        df["file_name"] = filename
 
         df.to_sql(
             name="raw_dsp",
@@ -273,8 +274,8 @@ def create_app(config_class=Config):
                             dsp_jabatan["sisfopers_jumlah_tamtama"] = jab[5]
                             dsp_jabatan["sisfopers_jumlah_pns"] = jab[6]
                             dsp_jabatan["sisfopers_jumlah_total"] = jab[7]
-                            dsp_jabatan["sisfopers_parent_id"] = jab[8] 
-                            dsp_jabatan["sisfopers_subsatuankerja_id"] = jab[9] 
+                            dsp_jabatan["sisfopers_parent_id"] = jab[8]
+                            dsp_jabatan["sisfopers_subsatuankerja_id"] = jab[9]
                             dsp_jabatan["compare_status"] = 1
                             break
 
