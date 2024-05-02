@@ -27,6 +27,8 @@ class RawDsp(db.Model):
     updated_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
     deleted_at = db.Column(db.DateTime(timezone=True), nullable=True)
     file_name = db.Column(db.String(500), nullable=True)
+    dsp_subsatuankerja_nama = db.Column(db.String(500), nullable=True)
+    dsp_subsatuankerja_id = db.Column(db.String(255), nullable=True)
 
     def __init__(
         self,
@@ -51,6 +53,8 @@ class RawDsp(db.Model):
         updated_at,
         deleted_at,
         file_name,
+        dsp_subsatuankerja_nama,
+        dsp_subsatuankerja_id,
     ):
         self.id = id
         self.dsp_nomor = dsp_nomor
@@ -73,6 +77,8 @@ class RawDsp(db.Model):
         self.updated_at = updated_at
         self.deleted_at = deleted_at
         self.file_name = file_name
+        self.dsp_subsatuankerja_nama = dsp_subsatuankerja_nama
+        self.dsp_subsatuankerja_id = dsp_subsatuankerja_id
 
     def __repr__(self):
         return f'<RawDsp "{self.id}">'

@@ -139,6 +139,8 @@ def create_app(config_class=Config):
         df["dsp_satuankerja_nama"] = form_data.get("satuankerja_nama")
         df["dsp_nomor_keputusan_kasau"] = form_data.get("nomor_keputusan_kasau")
         df["file_name"] = filename
+        df["dsp_subsatuankerja_nama"] = form_data.get("dsp_subsatuankerja_nama")
+        df["dsp_subsatuankerja_id"] = form_data.get("dsp_subsatuankerja_id")
 
         df.to_sql(
             name="raw_dsp",
@@ -212,6 +214,9 @@ def create_app(config_class=Config):
         raw_dsp_data = db.session.execute(raw_dsp_stmt)
         for dsp in raw_dsp_data.scalars():
             dsp_jabatan = dsp.__dict__
+            dsp_jabatan["raw_dsp_id"] = dsp.id
+            dsp_jabatan["dsp_subsatuankerja_nama"] = dsp.dsp_subsatuankerja_nama
+            dsp_jabatan["dsp_subsatuankerja_id"] = dsp.dsp_subsatuankerja_id
             del dsp_jabatan["_sa_instance_state"]
             if "created_at" in dsp_jabatan.keys():
                 del dsp_jabatan["created_at"]
