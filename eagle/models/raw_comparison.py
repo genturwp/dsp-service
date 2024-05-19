@@ -40,6 +40,9 @@ class RawComparison(db.Model):
     raw_dsp_id = db.Column(db.Integer)
     dsp_subsatuankerja_nama = db.Column(db.String(500), nullable=True)
     dsp_subsatuankerja_id = db.Column(db.String(300), nullable=True)
+    dsp_subsatparent_nama = db.Column(db.String(500), nullable=True)
+    dsp_subsatparent_id = db.Column(db.String(255), nullable=True)
+    file_name = db.Column(db.String(1000), nullable=True)
 
     def __init__(
         self,
@@ -77,6 +80,9 @@ class RawComparison(db.Model):
         raw_dsp_id,
         dsp_subsatuankerja_nama,
         dsp_subsatuankerja_id,
+        dsp_subsatparent_nama,
+        dsp_subsatparent_id,
+        file_name,
     ):
         self.id = id
         self.dsp_nomor = dsp_nomor
@@ -112,6 +118,9 @@ class RawComparison(db.Model):
         self.raw_dsp_id = raw_dsp_id
         self.dsp_subsatuankerja_nama = dsp_subsatuankerja_nama
         self.dsp_subsatuankerja_id = dsp_subsatuankerja_id
+        self.dsp_subsatparent_nama = dsp_subsatparent_nama
+        self.dsp_subsatparent_id = dsp_subsatparent_id
+        self.file_name = file_name
 
     def __repr__(self):
         return f'<RawDsp "{self.id}">'

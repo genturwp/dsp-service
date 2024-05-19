@@ -29,6 +29,8 @@ class RawDsp(db.Model):
     file_name = db.Column(db.String(500), nullable=True)
     dsp_subsatuankerja_nama = db.Column(db.String(500), nullable=True)
     dsp_subsatuankerja_id = db.Column(db.String(255), nullable=True)
+    dsp_subsatparent_nama = db.Column(db.String(500), nullable=True)
+    dsp_subsatparent_id = db.Column(db.String(255), nullable=True)
 
     def __init__(
         self,
@@ -55,6 +57,8 @@ class RawDsp(db.Model):
         file_name,
         dsp_subsatuankerja_nama,
         dsp_subsatuankerja_id,
+        dsp_subsatparent_nama,
+        dsp_subsatparent_id,
     ):
         self.id = id
         self.dsp_nomor = dsp_nomor
@@ -79,6 +83,8 @@ class RawDsp(db.Model):
         self.file_name = file_name
         self.dsp_subsatuankerja_nama = dsp_subsatuankerja_nama
         self.dsp_subsatuankerja_id = dsp_subsatuankerja_id
+        self.dsp_subsatparent_nama = dsp_subsatparent_nama
+        self.dsp_subsatparent_id = dsp_subsatparent_id
 
     def __repr__(self):
         return f'<RawDsp "{self.id}">'
