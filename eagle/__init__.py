@@ -1,5 +1,6 @@
 import os
 from flask import Flask, request
+from flask_cors import CORS
 from sqlalchemy import select, delete, text, asc, insert
 from config import Config
 from eagle.extensions import db
@@ -66,6 +67,7 @@ def read_dsp_file(dspfile) -> pd.DataFrame:
 def create_app(config_class=Config):
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_object(config_class)
+    CORS(app)
 
     # check upload folder exists or not
     if not os.path.isdir(app.config["UPLOAD_FOLDER"]):
