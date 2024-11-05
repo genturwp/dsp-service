@@ -1,14 +1,16 @@
 import os
+
+import numpy as np
+import pandas as pd
 from flask import Flask, request
 from flask_cors import CORS
-from sqlalchemy import select, delete, text, asc, insert
+from sqlalchemy import asc, delete, insert, select, text
+from werkzeug.utils import secure_filename
+
 from config import Config
 from eagle.extensions import db
-from eagle.models.raw_dsp import RawDsp
-from werkzeug.utils import secure_filename
 from eagle.models.raw_comparison import RawComparison
-import pandas as pd
-import numpy as np
+from eagle.models.raw_dsp import RawDsp
 
 
 def read_dsp_file(dspfile) -> pd.DataFrame:
@@ -669,10 +671,23 @@ def create_app(config_class=Config):
             dsp_jabatan_list.append(dsp_jabatan)
             counter = counter + 1
 
+        def filter_not_found(raw_dsp):
+            if raw_dsp["compare_status"] == 0:
+                return True
+            return False
+
+        def get_jabatan_nama(raw_dsp):
+            return raw_dsp["dsp_jabatan"]
+
+        not_paired = filter(filter_not_found, dsp_jabatan_list)
+        not_paired_nama_jabatan = list(map(get_jabatan_nama, not_paired))
         resp = {
             "status": 200,
-            "message": "dsp files uploaded successfully",
             "dsp_list": dsp_jabatan_list,
+            "count_not_paired_jabatan": len(not_paired_nama_jabatan),
+            "not_paired_jabatan": not_paired_nama_jabatan,
+            "message": "dsp files uploaded successfully",
         }
         return resp
+
     return app
