@@ -1,5 +1,6 @@
-from eagle.extensions import db
 from sqlalchemy.sql import func
+
+from extensions import db
 
 
 class RawComparison(db.Model):
@@ -42,6 +43,10 @@ class RawComparison(db.Model):
     dsp_subsatuankerja_id = db.Column(db.String(300), nullable=True)
     dsp_subsatparent_nama = db.Column(db.String(500), nullable=True)
     dsp_subsatparent_id = db.Column(db.String(255), nullable=True)
+    kotama_id = db.Column(db.String(300), nullable=True)
+    kotama_nama = db.Column(db.String(500), nullable=True)
+    dsp_subsatuankerja_level1_id = db.Column(db.String(300), nullable=True)
+    dsp_subsatuankerja_level1_nama = db.Column(db.String(500), nullable=True)
     file_name = db.Column(db.String(1000), nullable=True)
 
     def __init__(
@@ -82,6 +87,10 @@ class RawComparison(db.Model):
         dsp_subsatuankerja_id,
         dsp_subsatparent_nama,
         dsp_subsatparent_id,
+        kotama_id,
+        kotama_nama,
+        dsp_subsatuankerja_level1_id,
+        dsp_subsatuankerja_level1_nama,
         file_name,
     ):
         self.id = id
@@ -120,6 +129,10 @@ class RawComparison(db.Model):
         self.dsp_subsatuankerja_id = dsp_subsatuankerja_id
         self.dsp_subsatparent_nama = dsp_subsatparent_nama
         self.dsp_subsatparent_id = dsp_subsatparent_id
+        self.kotama_id = kotama_id
+        self.kotama_nama = kotama_nama
+        self.dsp_subsatuankerja_level1_id = dsp_subsatuankerja_level1_id
+        self.dsp_subsatuankerja_level1_nama = dsp_subsatuankerja_level1_nama
         self.file_name = file_name
 
     def __repr__(self):

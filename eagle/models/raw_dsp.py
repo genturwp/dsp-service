@@ -1,5 +1,6 @@
-from eagle.extensions import db
 from sqlalchemy.sql import func
+
+from extensions import db
 
 
 class RawDsp(db.Model):
