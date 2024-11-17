@@ -377,10 +377,25 @@ def preview_dsp():
                     if not jab_filtered.empty:
                         set_raw_dsp(raw_dsp, jab_filtered)
         raw_dsp_list.append(raw_dsp)
+
+    def filter_not_paired(dsp):
+        if dsp["compare_status"] == 0:
+            return True
+        return False
+
+    def map_jabatan_nama(dsp):
+        return dsp["dsp_jabatan"]
+
+    filter_jabatan = filter(filter_not_paired, raw_dsp_list)
+    list_not_paired = list(filter_jabatan)
+    count_not_paired = len(list_not_paired)
+    not_paired_jabatan = list(map(map_jabatan_nama, list_not_paired))
     resp = {
         "status": 200,
         "message": "dsp files uploaded successfully",
         "dsp_list": raw_dsp_list,
+        "count_not_paired_jabatan": count_not_paired,
+        "not_paired_jabatan": not_paired_jabatan,
     }
     return resp
 
