@@ -166,8 +166,6 @@ def get_child_struktur_id(parent_id: str, jab_satkers, jab_satker_filtered) -> s
     struktur_id = ""
     for jsf in jab_satker_filtered:
         jab_satker_parent_id = jsf[3]
-        if jab_satker_parent_id == "55001100000":
-            print(f"parent_id = {parent_id}, {jsf}")
         if parent_id == jab_satker_parent_id:
             struktur_id = jsf[0]
         else:
@@ -177,7 +175,7 @@ def get_child_struktur_id(parent_id: str, jab_satkers, jab_satker_filtered) -> s
     return struktur_id
 
 
-def get_child_struktur_id2(jab_satker_filtered, dsp_list) -> str:
+def get_child_struktur_id_mabes(jab_satker_filtered, dsp_list) -> str:
     for jsf in jab_satker_filtered:
         jab_satker_parent_id = jsf[3]
         parent_dsp = [
@@ -263,6 +261,8 @@ def preview_dsp():
     df_dsp["dsp_subsatuankerja_level1_nama"] = form_data.get(
         "dsp_subsatuankerja_level1_nama"
     )
+    df_dsp["kotama_id"] = form_data.get("kotama_id")
+    df_dsp["kotama_nama"] = form_data.get("kotama_nama")
 
     df_jabatan_satker = jabatan_satker(form_data.get("satuankerja_id"))
     jab_satkers = list(df_jabatan_satker)
@@ -313,6 +313,8 @@ def preview_dsp():
             "file_name": getattr(row, "file_name"),
             "dsp_jabatan": getattr(row, "dsp_jabatan"),
             "index": getattr(row, "Index"),
+            "kotama_id": getattr(row, "kotama_id"),
+            "kotama_nama": getattr(row, "kotama_nama"),
             "compare_status": 0,
         }
 
@@ -340,7 +342,9 @@ def preview_dsp():
                     if len(jab_flt) > 0:
                         set_raw_dsp(raw_dsp, jab_flt[0])
                     else:
-                        struktur_id = get_child_struktur_id2(jab_filtered, raw_dsp_list)
+                        struktur_id = get_child_struktur_id_mabes(
+                            jab_filtered, raw_dsp_list
+                        )
                         jab_flt = [x for x in jab_filtered if x[0] == struktur_id]
                         set_raw_dsp(raw_dsp, jab_flt[0])
             if (
@@ -459,8 +463,6 @@ def upload_dsp():
 
     dsp_file.save(dsp_file_path)
     df_dsp = read_dsp_file(dsp_file_path)
-    # df_dsp.replace({np.nan: None})
-    # df_dsp = df_dsp.fillna(0)
     df_dsp["dsp_satuankerja_id"] = form_data.get("satuankerja_id")
     df_dsp["dsp_satuankerja_nama"] = form_data.get("satuankerja_nama")
     df_dsp["dsp_nomor_keputusan_kasau"] = form_data.get("nomor_keputusan_kasau")
@@ -486,6 +488,7 @@ def upload_dsp():
     )
     df_dsp.reset_index()
     df_jabatan_satker = jabatan_satker(form_data.get("satuankerja_id"))
+    jab_satkers = list(df_jabatan_satker)
     raw_dsp_list = []
     for row in df_dsp.itertuples(index=True, name="Dsp"):
         dsp_gol_jab = (
@@ -532,11 +535,11 @@ def upload_dsp():
             "file_name": getattr(row, "file_name"),
             "dsp_jabatan": getattr(row, "dsp_jabatan"),
             "index": getattr(row, "Index"),
+            "kotama_id": getattr(row, "kotama_id"),
+            "kotama_nama": getattr(row, "kotama_nama"),
             "compare_status": 0,
         }
-        jab_filtered = df_jabatan_satker.query(
-            f"jabatan_nama.str.contains('{raw_dsp['dsp_jabatan']}')"
-        )
+        jab_filtered = [x for x in jab_satkers if raw_dsp["dsp_jabatan"] in x[4]]
         if len(jab_filtered) > 0:
             if (
                 raw_dsp["dsp_satuankerja_id"]
@@ -544,61 +547,63 @@ def upload_dsp():
                 and not raw_dsp["dsp_subsatuankerja_id"]
                 and not raw_dsp["dsp_subsatuankerja_level1_id"]
             ):
-                jab_satker = jab_filtered.query(
-                    f"struktur_id == '{raw_dsp['dsp_satuankerja_id']}'"
-                ).reset_index()
+                jab_satker = [
+                    x for x in jab_filtered if raw_dsp["dsp_satuankerja_id"] == x[0]
+                ]
                 if len(jab_satker) > 0:
-                    set_raw_dsp(raw_dsp, jab_satker)
+                    set_raw_dsp(raw_dsp, jab_satker[0])
                 else:
                     struktur_id = get_child_struktur_id(
                         raw_dsp["dsp_satuankerja_id"],
-                        df_jabatan_satker,
+                        jab_satkers,
                         jab_filtered,
                     )
-                    jab_filtered = jab_filtered.query(
-                        f"struktur_id == '{struktur_id}'"
-                    ).reset_index()
-                    if not jab_filtered.empty:
-                        set_raw_dsp(raw_dsp, jab_filtered)
+                    jab_flt = [x for x in jab_filtered if x[0] == struktur_id]
+                    if len(jab_flt) > 0:
+                        set_raw_dsp(raw_dsp, jab_flt[0])
+                    else:
+                        struktur_id = get_child_struktur_id_mabes(
+                            jab_filtered, raw_dsp_list
+                        )
+                        jab_flt = [x for x in jab_filtered if x[0] == struktur_id]
+                        set_raw_dsp(raw_dsp, jab_flt[0])
             if (
                 raw_dsp["dsp_satuankerja_id"]
                 and raw_dsp["dsp_subsatparent_id"]
                 and raw_dsp["dsp_subsatuankerja_id"]
                 and not raw_dsp["dsp_subsatuankerja_level1_id"]
             ):
-                jab_satker = jab_filtered.query(
-                    f"struktur_id == '{raw_dsp['dsp_subsatuankerja_id']}'"
-                ).reset_index()
+                jab_satker = [
+                    x for x in jab_filtered if x[0] == raw_dsp["dsp_subsatuankerja_id"]
+                ]
                 if len(jab_satker) > 0:
-                    set_raw_dsp(raw_dsp, jab_satker)
+                    set_raw_dsp(raw_dsp, jab_satker[0])
                 else:
                     struktur_id = get_child_struktur_id(
                         raw_dsp["dsp_subsatuankerja_id"],
-                        df_jabatan_satker,
+                        jab_satkers,
                         jab_filtered,
                     )
-                    jab_filtered = jab_filtered.query(
-                        f"struktur_id == '{struktur_id}'"
-                    ).reset_index()
-                    if not jab_filtered.empty:
-                        set_raw_dsp(raw_dsp, jab_filtered)
+                    jab_flt = [x for x in jab_filtered if x[0] == struktur_id]
+                    if len(jab_flt) > 0:
+                        set_raw_dsp(raw_dsp, jab_flt[0])
             if raw_dsp["dsp_subsatuankerja_level1_id"]:
-                jab_level1 = jab_filtered.query(
-                    f"struktur_id == '{raw_dsp['dsp_subsatuankerja_level1_id']}'"
-                ).reset_index()
+                jab_level1 = [
+                    x
+                    for x in jab_filtered
+                    if x[0] == raw_dsp["dsp_subsatuankerja_level1_id"]
+                ]
                 if len(jab_level1) > 0:
-                    set_raw_dsp(raw_dsp, jab_level1)
+                    set_raw_dsp(raw_dsp, jab_level1[0])
                 else:
                     struktur_id = get_child_struktur_id(
                         raw_dsp["dsp_subsatuankerja_level1_id"],
-                        df_jabatan_satker,
+                        jab_satkers,
                         jab_filtered,
                     )
-                    jab_filtered = jab_filtered.query(
-                        f"struktur_id == '{struktur_id}'"
-                    ).reset_index()
-                    if not jab_filtered.empty:
-                        set_raw_dsp(raw_dsp, jab_filtered)
+                    jab_flt = [x for x in jab_filtered if x[0] == struktur_id]
+                    if len(jab_flt) > 0:
+                        set_raw_dsp(raw_dsp, jab_flt[0])
         raw_dsp_list.append(raw_dsp)
     delete_raw_comparison_by_kepkasau_and_satuankerja_id(
         form_data.get("nomor_keputusan_kasau"),
