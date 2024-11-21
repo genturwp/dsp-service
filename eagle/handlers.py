@@ -7,7 +7,7 @@ import os
 import numpy as np
 import pandas as pd
 from flask import Blueprint, current_app, request
-from sqlalchemy import delete, text
+from sqlalchemy import CursorResult, delete, text
 from sqlalchemy.sql import insert
 from werkzeug.utils import secure_filename
 
@@ -132,7 +132,7 @@ def delete_raw_comparison_by_kepkasau_and_satuankerja_id(
     db.session.commit()
 
 
-def jabatan_satker(satuankerja_id) -> pd.DataFrame:
+def jabatan_satker(satuankerja_id) -> CursorResult[any]:
     query = f"""
         select * from (
         select struktur_id, 'SAT' as satker_type, b.satuankerja_nama as satker_nama, '' as parent_id, 
@@ -153,54 +153,57 @@ def jabatan_satker(satuankerja_id) -> pd.DataFrame:
         where b.satuankerja_id = '{satuankerja_id}' and b.subsatuankerja_status = 1 and a.jabatan_status = 1 
         ) as jab order by jab.parent_id asc
         """
-    result = pd.read_sql(query, db.engine)
+    with db.engine.connect() as con:
+        result = con.execute(text(query))
+
     return result
 
 
-def get_child_struktur_id(
-    parent_id: str, jab_satker: pd.DataFrame, jab_satker_filtered: pd.DataFrame
-) -> str:
+def get_child_struktur_id(parent_id: str, jab_satkers, jab_satker_filtered) -> str:
+    """
+    lookup child
+    """
     struktur_id = ""
-    for jsf in jab_satker_filtered.itertuples(name="SatkerFiltered"):
-        jab_satker_parent_id = getattr(jsf, "parent_id")
+    for jsf in jab_satker_filtered:
+        jab_satker_parent_id = jsf[3]
+        if jab_satker_parent_id == "55001100000":
+            print(f"parent_id = {parent_id}, {jsf}")
         if parent_id == jab_satker_parent_id:
-            struktur_id = getattr(jsf, "struktur_id")
+            struktur_id = jsf[0]
         else:
-            while (
-                jab_satker.query(
-                    f"struktur_id == '{jab_satker_parent_id}'"
-                ).reset_index()
-                is not None
-            ):
-                parent = jab_satker.query(
-                    f"struktur_id == '{jab_satker_parent_id}'"
-                ).reset_index()
-                if parent.empty:
-                    break
-                jab_satker_parent_id = parent.iloc[0]["parent_id"]
-                if jab_satker_parent_id == "":
-                    break
-                if jab_satker_parent_id == parent_id:
-                    struktur_id = getattr(jsf, "struktur_id")
-                    break
+            for js in jab_satkers:
+                if js[0] == jab_satker_parent_id and js[3] == parent_id:
+                    struktur_id = jsf[0]
     return struktur_id
 
 
-def set_raw_dsp(raw_dsp: dict, filtered_jab: pd.DataFrame):
+def get_child_struktur_id2(jab_satker_filtered, dsp_list) -> str:
+    for jsf in jab_satker_filtered:
+        jab_satker_parent_id = jsf[3]
+        parent_dsp = [
+            x
+            for x in dsp_list
+            if x["compare_status"] != 0
+            and jab_satker_parent_id == x["sisfopers_struktur_id"]
+        ]
+        if len(parent_dsp) > 0:
+            return jsf[0]
+    return ""
+
+
+def set_raw_dsp(raw_dsp: dict, filtered_jab):
     """
     set raw_dsp
     """
-    raw_dsp["sisfopers_struktur_id"] = filtered_jab.iloc[0]["struktur_id"]
-    raw_dsp["sisfopers_jabatan_nama_panjang"] = filtered_jab.iloc[0][
-        "jabatan_nama_panjang"
-    ]
-    raw_dsp["sisfopers_jumlah_perwira"] = float(filtered_jab.iloc[0]["jumlah_perwira"])
-    raw_dsp["sisfopers_jumlah_bintara"] = float(filtered_jab.iloc[0]["jumlah_bintara"])
-    raw_dsp["sisfopers_jumlah_tamtama"] = float(filtered_jab.iloc[0]["jumlah_tamtama"])
-    raw_dsp["sisfopers_jumlah_pns"] = float(filtered_jab.iloc[0]["jumlah_pns"])
-    raw_dsp["sisfopers_jumlah_total"] = float(filtered_jab.iloc[0]["jumlah_total"])
-    raw_dsp["sisfopers_parent_id"] = filtered_jab.iloc[0]["parent_id"]
-    raw_dsp["sisfopers_subsatuankerja_id"] = filtered_jab.iloc[0]["struktur_id"]
+    raw_dsp["sisfopers_struktur_id"] = filtered_jab[0]
+    raw_dsp["sisfopers_jabatan_nama_panjang"] = filtered_jab[5].strip()
+    raw_dsp["sisfopers_jumlah_perwira"] = float(filtered_jab[6])
+    raw_dsp["sisfopers_jumlah_bintara"] = float(filtered_jab[7])
+    raw_dsp["sisfopers_jumlah_tamtama"] = float(filtered_jab[8])
+    raw_dsp["sisfopers_jumlah_pns"] = float(filtered_jab[9])
+    raw_dsp["sisfopers_jumlah_total"] = float(filtered_jab[10])
+    raw_dsp["sisfopers_parent_id"] = filtered_jab[3]
+    raw_dsp["sisfopers_subsatuankerja_id"] = filtered_jab[0]
     raw_dsp["compare_status"] = 1
 
 
@@ -262,6 +265,8 @@ def preview_dsp():
     )
 
     df_jabatan_satker = jabatan_satker(form_data.get("satuankerja_id"))
+    jab_satkers = list(df_jabatan_satker)
+
     raw_dsp_list = []
     for row in df_dsp.itertuples(index=True, name="Dsp"):
         dsp_gol_jab = (
@@ -311,9 +316,8 @@ def preview_dsp():
             "compare_status": 0,
         }
 
-        jab_filtered = df_jabatan_satker.query(
-            f"jabatan_nama.str.contains('{raw_dsp['dsp_jabatan']}')"
-        )
+        jab_filtered = [x for x in jab_satkers if raw_dsp["dsp_jabatan"] in x[4]]
+
         if len(jab_filtered) > 0:
             if (
                 raw_dsp["dsp_satuankerja_id"]
@@ -321,61 +325,67 @@ def preview_dsp():
                 and not raw_dsp["dsp_subsatuankerja_id"]
                 and not raw_dsp["dsp_subsatuankerja_level1_id"]
             ):
-                jab_satker = jab_filtered.query(
-                    f"struktur_id == '{raw_dsp['dsp_satuankerja_id']}'"
-                ).reset_index()
+                jab_satker = [
+                    x for x in jab_filtered if raw_dsp["dsp_satuankerja_id"] == x[0]
+                ]
                 if len(jab_satker) > 0:
-                    set_raw_dsp(raw_dsp, jab_satker)
+                    set_raw_dsp(raw_dsp, jab_satker[0])
                 else:
                     struktur_id = get_child_struktur_id(
                         raw_dsp["dsp_satuankerja_id"],
-                        df_jabatan_satker,
+                        jab_satkers,
                         jab_filtered,
                     )
-                    jab_filtered = jab_filtered.query(
-                        f"struktur_id == '{struktur_id}'"
-                    ).reset_index()
-                    if not jab_filtered.empty:
-                        set_raw_dsp(raw_dsp, jab_filtered)
+                    jab_flt = [x for x in jab_filtered if x[0] == struktur_id]
+                    if len(jab_flt) > 0:
+                        set_raw_dsp(raw_dsp, jab_flt[0])
+                    else:
+                        struktur_id = get_child_struktur_id2(jab_filtered, raw_dsp_list)
+                        jab_flt = [x for x in jab_filtered if x[0] == struktur_id]
+                        set_raw_dsp(raw_dsp, jab_flt[0])
             if (
                 raw_dsp["dsp_satuankerja_id"]
                 and raw_dsp["dsp_subsatparent_id"]
                 and raw_dsp["dsp_subsatuankerja_id"]
                 and not raw_dsp["dsp_subsatuankerja_level1_id"]
             ):
-                jab_satker = jab_filtered.query(
-                    f"struktur_id == '{raw_dsp['dsp_subsatuankerja_id']}'"
-                ).reset_index()
+                jab_satker = []
+                for jf in jab_filtered:
+                    if jf[0] == raw_dsp["dsp_subsatuankerja_id"]:
+                        jab_satker.append(jf)
                 if len(jab_satker) > 0:
-                    set_raw_dsp(raw_dsp, jab_satker)
+                    set_raw_dsp(raw_dsp, jab_satker[0])
                 else:
                     struktur_id = get_child_struktur_id(
                         raw_dsp["dsp_subsatuankerja_id"],
-                        df_jabatan_satker,
+                        jab_satkers,
                         jab_filtered,
                     )
-                    jab_filtered = jab_filtered.query(
-                        f"struktur_id == '{struktur_id}'"
-                    ).reset_index()
-                    if not jab_filtered.empty:
-                        set_raw_dsp(raw_dsp, jab_filtered)
+                    jab_flt = []
+                    for jf in jab_filtered:
+                        if jf[0] == struktur_id:
+                            jab_flt.append(jf)
+                    if len(jab_flt) > 0:
+                        set_raw_dsp(raw_dsp, jab_flt[0])
             if raw_dsp["dsp_subsatuankerja_level1_id"]:
-                jab_level1 = jab_filtered.query(
-                    f"struktur_id == '{raw_dsp['dsp_subsatuankerja_level1_id']}'"
-                ).reset_index()
+                jab_level1 = []
+                for jf in jab_filtered:
+                    if jf[0] == raw_dsp["dsp_subsatuankerja_level1_id"]:
+                        jab_level1.append(jf)
                 if len(jab_level1) > 0:
-                    set_raw_dsp(raw_dsp, jab_level1)
+                    set_raw_dsp(raw_dsp, jab_level1[0])
                 else:
                     struktur_id = get_child_struktur_id(
                         raw_dsp["dsp_subsatuankerja_level1_id"],
-                        df_jabatan_satker,
+                        jab_satkers,
                         jab_filtered,
                     )
-                    jab_filtered = jab_filtered.query(
-                        f"struktur_id == '{struktur_id}'"
-                    ).reset_index()
-                    if not jab_filtered.empty:
-                        set_raw_dsp(raw_dsp, jab_filtered)
+                    jab_flt = []
+                    for jf in jab_filtered:
+                        if jf[0] == struktur_id:
+                            jab_flt.append(jf)
+                    if len(jab_flt) > 0:
+                        set_raw_dsp(raw_dsp, jab_flt[0])
         raw_dsp_list.append(raw_dsp)
 
     def filter_not_paired(dsp):
