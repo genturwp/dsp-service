@@ -346,7 +346,8 @@ def preview_dsp():
                             jab_filtered, raw_dsp_list
                         )
                         jab_flt = [x for x in jab_filtered if x[0] == struktur_id]
-                        set_raw_dsp(raw_dsp, jab_flt[0])
+                        if len(jab_flt) > 0:
+                            set_raw_dsp(raw_dsp, jab_flt[0])
             if (
                 raw_dsp["dsp_satuankerja_id"]
                 and raw_dsp["dsp_subsatparent_id"]
