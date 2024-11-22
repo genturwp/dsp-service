@@ -194,7 +194,9 @@ def set_raw_dsp(raw_dsp: dict, filtered_jab):
     set raw_dsp
     """
     raw_dsp["sisfopers_struktur_id"] = filtered_jab[0]
-    raw_dsp["sisfopers_jabatan_nama_panjang"] = filtered_jab[5].strip()
+    raw_dsp["sisfopers_jabatan_nama_panjang"] = (
+        filtered_jab[5].strip() if filtered_jab[5] is not None else ""
+    )
     raw_dsp["sisfopers_jumlah_perwira"] = float(filtered_jab[6])
     raw_dsp["sisfopers_jumlah_bintara"] = float(filtered_jab[7])
     raw_dsp["sisfopers_jumlah_tamtama"] = float(filtered_jab[8])
@@ -264,6 +266,7 @@ def preview_dsp():
     df_dsp["kotama_id"] = form_data.get("kotama_id")
     df_dsp["kotama_nama"] = form_data.get("kotama_nama")
 
+    df_dsp = df_dsp.dropna(how="all", subset=["dsp_jabatan"])
     df_jabatan_satker = jabatan_satker(form_data.get("satuankerja_id"))
     jab_satkers = list(df_jabatan_satker)
 
@@ -317,7 +320,6 @@ def preview_dsp():
             "kotama_nama": getattr(row, "kotama_nama"),
             "compare_status": 0,
         }
-
         jab_filtered = [x for x in jab_satkers if raw_dsp["dsp_jabatan"] in x[4]]
 
         if len(jab_filtered) > 0:
@@ -480,6 +482,7 @@ def upload_dsp():
     )
     df_dsp["kotama_id"] = form_data.get("kotama_id")
     df_dsp["kotama_nama"] = form_data.get("kotama_nama")
+    df_dsp = df_dsp.dropna(how="all", subset=["dsp_jabatan"])
     df_dsp.to_sql(
         name="raw_dsp",
         con=db.engine,
