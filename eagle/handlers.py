@@ -407,12 +407,45 @@ def preview_dsp():
     list_not_paired = list(filter_jabatan)
     count_not_paired = len(list_not_paired)
     not_paired_jabatan = list(map(map_jabatan_nama, list_not_paired))
+
+    def summarize_dsp(dsp_list) -> dict:
+        total_pa = 0
+        total_ba = 0
+        total_ta = 0
+        total_pns = 0
+        total_not_paired_pa = 0
+        total_not_paired_ba = 0
+        total_not_paired_ta = 0
+        total_not_paired_pns = 0
+        for dsp in dsp_list:
+            total_pa += dsp["dsp_pa"]
+            total_ba += dsp["dsp_ba"]
+            total_ta += dsp["dsp_ta"]
+            total_pns += dsp["dsp_pns"]
+            if dsp["compare_status"] == 0:
+                total_not_paired_pa += dsp["dsp_pa"]
+                total_not_paired_ba += dsp["dsp_ba"]
+                total_not_paired_ta += dsp["dsp_ta"]
+                total_not_paired_pns += dsp["dsp_pns"]
+        return {
+            "total_pa": total_pa,
+            "total_ba": total_ba,
+            "total_ta": total_ta,
+            "total_pns": total_pns,
+            "total_not_paired_pa": total_not_paired_pa,
+            "total_not_paired_ba": total_not_paired_ba,
+            "total_not_paired_ta": total_not_paired_ta,
+            "total_not_paired_pns": total_not_paired_pns,
+        }
+
+    summary = summarize_dsp(raw_dsp_list)
     resp = {
         "status": 200,
         "message": "dsp files uploaded successfully",
         "dsp_list": raw_dsp_list,
         "count_not_paired_jabatan": count_not_paired,
         "not_paired_jabatan": not_paired_jabatan,
+        "dsp_summary": summary,
     }
     return resp
 
